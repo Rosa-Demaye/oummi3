@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:oummi3/features/safety_network/data/models/alert_model.dart';
+import 'package:oummi3/shared/models/alert_model.dart';
+import 'package:oummi3/main.dart';
 
 class SafetyRepository {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -12,21 +13,27 @@ class SafetyRepository {
     final user = _auth.currentUser;
     if (user == null) throw Exception('User not authenticated');
     
-    await _db
-        .collection('users')
-        .doc(user.uid)
-        .collection('maternal_alerts')
-        .doc(alert.id)
-        .set(alert.toFirestore());
+    final path = 'users/${user.uid}/maternal_alerts';
+
+    await globalSyncService.performWrite(
+      collection: path,
+      docId: alert.id,
+      data: alert.toFirestore(),
+    );
   }
 
   Future<void> increaseReminderFrequency() async {
     final user = _auth.currentUser;
     if (user != null) {
-      await _db.collection('users').doc(user.uid).update({
-        'reminderFrequencyIncrement': FieldValue.increment(1),
-        'lastRiskAssessment': FieldValue.serverTimestamp(),
-      });
+      await globalSyncService.performWrite(
+        collection: 'users',
+        docId: user.uid,
+        data: {
+          'reminderFrequencyIncrement': FieldValue.increment(1),
+          'lastRiskAssessment': FieldValue.serverTimestamp(),
+        },
+        type: 'update',
+      );
     }
   }
 

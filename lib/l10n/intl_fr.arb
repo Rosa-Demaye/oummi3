@@ -1,0 +1,12 @@
+{
+  "@@locale": "fr",
+  "welcomeTitle": "Bienvenue dans OUMI",
+  "welcomeSubtitle": "Nous accompagnons les femmes tchadiennes du suivi menstruel à la santé postnatal.",
+  "signupButton": "S’enregistrer",
+  "loginButton": "Se connecter",
+  "roleYoungWoman": "Jeune femme",
+  "rolePregnant": "Femme enceinte",
+  "roleFather": "Père",
+  "roleDoctor": "Médecin",
+  "roleHospital": "Hôpital"
+}

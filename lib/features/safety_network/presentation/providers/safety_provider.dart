@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:oummi3/features/safety_network/data/models/alert_model.dart';
+import 'package:oummi3/shared/models/alert_model.dart';
 import 'package:oummi3/features/safety_network/data/repositories/safety_repository.dart';
-import 'package:oummi3/features/cycle_tracking/data/repositories/cycle_repository.dart';
-import 'package:oummi3/features/cycle_tracking/presentation/providers/cycle_provider.dart' as cp;
-import 'package:oummi3/features/cycle_tracking/data/models/cycle_model.dart';
+import 'package:oummi3/features/young_woman/data/repositories/cycle_repository.dart';
+import 'package:oummi3/features/young_woman/presentation/providers/cycle_provider.dart' as cp;
+import 'package:oummi3/shared/models/cycle_model.dart';
 
 final safetyRepositoryProvider = Provider((ref) => SafetyRepository());
 

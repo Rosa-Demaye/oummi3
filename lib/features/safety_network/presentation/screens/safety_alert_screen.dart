@@ -1,213 +1,278 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:oummi3/core/themes/app_theme.dart';
-import 'package:oummi3/features/safety_network/data/models/alert_model.dart';
-import 'package:oummi3/features/safety_network/presentation/providers/safety_provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:oummi3/core/theme/app_theme.dart';
+import 'package:oummi3/core/widgets/oumi_widgets.dart';
+import 'package:oummi3/core/emergency/emergency_service.dart';
+import 'package:oummi3/features/auth/presentation/providers/auth_provider.dart';
 
 class SafetyAlertScreen extends ConsumerWidget {
   const SafetyAlertScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final alertState = ref.watch(safetyAlertProvider);
+    final userProfile = ref.watch(userProfileProvider).value;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: OumiColors.blanc,
-        title: const Text('Sécurité maternelle',
-            style: TextStyle(color: OumiColors.noirDoux, fontWeight: FontWeight.bold)),
-        centerTitle: true,
+      backgroundColor: const Color(0xFFFFF5F5), // Figma BG for emergency
+      body: CustomScrollView(
+        slivers: [
+          // Header
+          SliverPadding(
+            padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 24),
+            sliver: SliverToBoxAdapter(
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => context.pop(),
+                    icon: const Icon(Icons.arrow_back, color: OumiColors.red),
+                    style: IconButton.styleFrom(
+                      backgroundColor: OumiColors.red.withValues(alpha: 0.1),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('🚨 Besoin d\'aide ?', style: OumiTypography.h1.copyWith(color: OumiColors.red)),
+                        Text('Choisissez l\'action selon votre situation', style: OumiTypography.bodySmall),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Main Action: SIGNAL LABOR
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            sliver: SliverToBoxAdapter(
+              child: _buildSignalLaborCard(context, ref, userProfile),
+            ),
+          ),
+
+          // Secondary Actions
+          SliverPadding(
+            padding: const EdgeInsets.all(24),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  _buildEmergencyTile(
+                    icon: '📞',
+                    label: 'Appeler les urgences',
+                    sub: '1515 — Urgences médicales nationales',
+                    color: OumiColors.amber,
+                    onTap: () {},
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEmergencyTile(
+                    icon: '🏥',
+                    label: 'Contacter l\'hôpital',
+                    sub: 'Clinique SALAM — Votre hôpital partenaire',
+                    color: OumiColors.blue,
+                    onTap: () {},
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEmergencyTile(
+                    icon: '📍',
+                    label: 'Hôpital le plus proche',
+                    sub: 'Trouver et obtenir l\'itinéraire',
+                    color: OumiColors.teal,
+                    onTap: () => context.push('/dashboard/${userProfile?.role.name}/hospitals-map'),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEmergencyTile(
+                    icon: '🚑',
+                    label: 'Demander une ambulance',
+                    sub: 'Si disponible dans votre zone',
+                    color: OumiColors.primary,
+                    onTap: () {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Emergency Contact
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            sliver: SliverToBoxAdapter(
+              child: _buildEmergencyContactCard(),
+            ),
+          ),
+
+          // Offline Note
+          SliverPadding(
+            padding: const EdgeInsets.all(24),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                '⚡ Ces actions fonctionnent aussi hors ligne via SMS quand internet n\'est pas disponible',
+                textAlign: TextAlign.center,
+                style: OumiTypography.caption.copyWith(height: 1.6),
+              ),
+            ),
+          ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  Widget _buildSignalLaborCard(BuildContext context, WidgetRef ref, dynamic user) {
+    return InkWell(
+      onTap: () => _triggerSignalLabor(context, user),
+      child: Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [OumiColors.red, Color(0xFFC62828)],
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: OumiColors.red.withValues(alpha: 0.42),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
           children: [
-            // Consent toggle
-            _buildConsentSection(ref),
-            const SizedBox(height: 32),
-            // Status card
-            _buildStatusCard(context, ref, alertState),
-            const SizedBox(height: 32),
-            // Manual trigger buttons
-            _buildManualTriggers(context, ref),
+            Container(
+              width: 56, height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Center(child: Text('👶', style: TextStyle(fontSize: 28))),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Signaler le début du travail', style: OumiTypography.h3.copyWith(color: Colors.white, fontSize: 17)),
+                  Text('Alerter votre équipe médicale immédiatement', style: OumiTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.8))),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildConsentSection(WidgetRef ref) {
-    return Card(
-      color: OumiColors.roseClair,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Partagez votre sécurité',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: OumiColors.noirDoux),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'OUMI peut alerter votre médecin, hôpital et contact d\'urgence en cas de risque identifié. Vous pouvez retirer votre consentement à tout moment.',
-              style: TextStyle(color: OumiColors.grisTexte, fontSize: 14),
-            ),
-            CheckboxListTile(
-              title: const Text('Je consens aux alertes de sécurité',
-                  style: TextStyle(color: OumiColors.noirDoux)),
-              value: true, // In real app, fetch from user profile provider
-              activeColor: OumiColors.oumiRose,
-              onChanged: (val) {
-                // Implement consent update in profile provider
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusCard(BuildContext context, WidgetRef ref, AlertStatus state) {
-    Color statusColor = OumiColors.vertSante;
-    String statusText = 'Aucun risque identifié aujourd\'hui';
-    
-    if (state == AlertStatus.assessing) {
-      statusText = 'Évaluation en cours...';
-      statusColor = OumiColors.bleuSante;
-    } else if (state == AlertStatus.sent) {
-      statusText = 'Alerte envoyée au réseau';
-      statusColor = OumiColors.orangeAlerte;
-    } else if (state == AlertStatus.error) {
-      statusText = 'Erreur lors de l\'évaluation';
-      statusColor = OumiColors.rougeUrgence;
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Dernière évaluation des risques',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: OumiColors.noirDoux)),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Text(statusText)),
-              ],
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => ref.read(safetyAlertProvider.notifier).assessRisk(),
-              child: const Text('Évaluer maintenant'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildManualTriggers(BuildContext context, WidgetRef ref) {
-    return Column(
-      children: [
-        _manualTriggerCard(
-          icon: Icons.warning_amber_rounded,
-          title: 'Symptômes sévères',
-          color: OumiColors.orangeAlerte,
-          subtitle: 'Alerter médecin + hôpital',
-          onTap: () => _showConfirmationDialog(context, ref, AlertType.highRisk),
-        ),
-        const SizedBox(height: 16),
-        _manualTriggerCard(
-          icon: Icons.local_hospital_rounded,
-          title: 'Début du travail',
-          color: OumiColors.rougeUrgence,
-          subtitle: 'Pré-alerte hôpital avec résumé',
-          onTap: () => _showConfirmationDialog(context, ref, AlertType.laborStart),
-        ),
-      ],
-    );
-  }
-
-  Widget _manualTriggerCard({
-    required IconData icon,
-    required String title,
+  Widget _buildEmergencyTile({
+    required String icon,
+    required String label,
+    required String sub,
     required Color color,
-    required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(OumiDecorations.defaultRadius),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(OumiDecorations.defaultRadius),
+    final bgColor = color.withValues(alpha: 0.1);
+    return OumiCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(16),
+      radius: 20,
+      child: Row(
+        children: [
+          Container(
+            width: 48, height: 48,
+            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(16)),
+            child: Center(child: Text(icon, style: const TextStyle(fontSize: 24))),
           ),
-          child: Row(
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: OumiTypography.label),
+                Text(sub, style: OumiTypography.caption),
+              ],
+            ),
+          ),
+          const Icon(Icons.arrow_forward_ios, size: 16, color: OumiColors.border),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmergencyContactCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: OumiColors.soft,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: OumiColors.primaryLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Contact d\'urgence', style: OumiTypography.label.copyWith(fontSize: 13)),
+          const SizedBox(height: 12),
+          Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
-                child: Icon(icon, color: Colors.white, size: 24),
+              const CircleAvatar(
+                radius: 20,
+                backgroundColor: OumiColors.primary,
+                child: Text('MA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 4),
-                    Text(subtitle, style: const TextStyle(color: OumiColors.grisTexte, fontSize: 13)),
+                    Text('Moussa Ali (Mari)', style: OumiTypography.label),
+                    Text('+235 66 XX XX XX', style: OumiTypography.caption),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: OumiColors.grisTexte),
+              _contactButton(Icons.phone, OumiColors.green),
+              const SizedBox(width: 8),
+              _contactButton(Icons.chat_bubble_outline, OumiColors.blue),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showConfirmationDialog(BuildContext context, WidgetRef ref, AlertType type) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Confirmer l\'alerte'),
-        content: Text('Êtes-vous sûr de vouloir envoyer une alerte de type ${type.name} à votre réseau de sécurité ?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
-          ElevatedButton(
-            onPressed: () {
-              // In a real app, you'd call a specific manual trigger method in the notifier
-              ref.read(safetyAlertProvider.notifier).assessRisk(); 
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Alerte ${type.name} envoyée !'), backgroundColor: OumiColors.vertSante),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: OumiColors.oumiRose),
-            child: const Text('Envoyer'),
           ),
         ],
       ),
     );
+  }
+
+  Widget _contactButton(IconData icon, Color color) {
+    return Container(
+      width: 38, height: 38,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: color, size: 18),
+    );
+  }
+
+  void _triggerSignalLabor(BuildContext context, dynamic user) async {
+    if (user == null) return;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmer le signal ?'),
+        content: const Text('Ceci enverra une alerte immédiate à votre hôpital et vos proches.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: OumiColors.red),
+            child: const Text('SIGNALER MAINTENANT'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await EmergencyService().signalLabor(user);
+    }
   }
 }

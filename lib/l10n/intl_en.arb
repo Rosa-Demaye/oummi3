@@ -1,0 +1,12 @@
+{
+  "@@locale": "en",
+  "welcomeTitle": "Welcome to OUMI",
+  "welcomeSubtitle": "We support Chadian women from menstrual tracking through postnatal care.",
+  "signupButton": "Sign up",
+  "loginButton": "Log in",
+  "roleYoungWoman": "Young Woman",
+  "rolePregnant": "Pregnant Woman",
+  "roleFather": "Father",
+  "roleDoctor": "Doctor",
+  "roleHospital": "Hospital"
+}

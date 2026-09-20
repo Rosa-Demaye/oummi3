@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // 1. DOCUMENT UTILISATEUR (users/{userId})
+    // ==========================================
+    match /users/{userId} {
+      // Lecture : l'utilisateur peut lire son propre profil.
+      // Note : On autorise la lecture par tout utilisateur authentifié pour permettre
+      // le partage de données (linking) et la recherche de médecins/hôpitaux.
+      allow read: if request.auth != null;
+
+      // Écriture : Seul le propriétaire peut modifier ses informations
+      allow write: if request.auth != null && request.auth.uid == userId;
+
+      // Admin override (via claims personnalisés)
+      allow write: if request.auth != null && request.auth.token.admin == true;
+
+      // --- Sous-collections (Cycle, Grossesse, Alertes) ---
+      match /cycle_records/{recordId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /pregnancy_records/{recordId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /maternal_alerts/{alertId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && (request.auth.uid == userId || request.auth.token.role == 'doctor');
+      }
+    }
+
+    // ==========================================
+    // 2. RENDEZ-VOUS / APPOINTMENTS
+    // ==========================================
+    match /appointments/{appointmentId} {
+      allow read: if request.auth != null &&
+                    (request.auth.uid == resource.data.userId ||
+                     request.auth.token.role == 'doctor');
+      allow create: if request.auth != null &&
+                      (request.auth.uid == request.resource.data.userId ||
+                       request.auth.token.role == 'doctor');
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // ==========================================
+    // 3. RÉSEAU DE SÉCURITÉ / URGENCES (emergencyAlerts)
+    // ==========================================
+    match /emergencyAlerts/{alertId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+                     (request.auth.uid == userId ||
+                      request.auth.token.role == 'doctor' ||
+                      request.auth.token.role == 'hospital');
+    }
+
+    // ==========================================
+    // 4. PAIEMENTS (pendingPayments)
+    // ==========================================
+    match /pendingPayments/{paymentId} {
+      allow read: if request.auth != null &&
+                    (request.auth.uid == resource.data.userId ||
+                     request.auth.token.role == 'doctor');
+      allow write: if request.auth != null; // Création par patient, mise à jour par webhook/admin
+    }
+
+    // ==========================================
+    // 5. CARNET DE SANTÉ / HEALTH RECORDS
+    // ==========================================
+    match /health_records/{recordId} {
+      allow read: if request.auth != null &&
+                    (request.auth.uid == resource.data.userId ||
+                     request.auth.token.role == 'doctor');
+      allow write: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // ==========================================
+    // 6. SÉCURITÉ PAR DÉFAUT
+    // ==========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

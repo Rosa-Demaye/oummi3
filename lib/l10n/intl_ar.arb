@@ -1,0 +1,12 @@
+{
+  "@@locale": "ar",
+  "welcomeTitle": "أهلاً بك في OUMI",
+  "welcomeSubtitle": "نتابع صحة المرأة التشادية من المتابعة الشهرية حتى الرعاية ما بعد الولادة.",
+  "signupButton": "تسجيل",
+  "loginButton": "تسجيل الدخول",
+  "roleYoungWoman": "امرأة شابة",
+  "rolePregnant": "امرأة حامل",
+  "roleFather": "أب",
+  "roleDoctor": "طبيب",
+  "roleHospital": "مستشفى"
+}

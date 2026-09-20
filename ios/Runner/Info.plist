@@ -66,5 +66,23 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to location when open to show your position on the map.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>This app needs access to location when in the background to track your safety.</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>CFBundleURLName</key>
+        <string>oummi</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <!-- REVERSED_CLIENT_ID from GoogleService-Info.plist -->
+          <string>com.googleusercontent.apps.REPLACE_WITH_YOUR_ID</string>
+        </array>
+      </dict>
+    </array>
 </dict>
 </plist>
